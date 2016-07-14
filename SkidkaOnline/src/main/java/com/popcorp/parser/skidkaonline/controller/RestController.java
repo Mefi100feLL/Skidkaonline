@@ -1,20 +1,14 @@
 package com.popcorp.parser.skidkaonline.controller;
 
-import com.popcorp.parser.skidkaonline.dto.SaleCommentsDTO;
+import com.popcorp.parser.skidkaonline.dto.UniversalDTO;
 import com.popcorp.parser.skidkaonline.entity.*;
-import com.popcorp.parser.skidkaonline.net.APIFactory;
-import com.popcorp.parser.skidkaonline.repository.CategoryRepository;
-import com.popcorp.parser.skidkaonline.repository.CityRepository;
-import com.popcorp.parser.skidkaonline.repository.SaleRepository;
-import com.popcorp.parser.skidkaonline.repository.ShopsRepository;
+import com.popcorp.parser.skidkaonline.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
-import java.util.ArrayList;
+import java.util.Calendar;
 
 @org.springframework.web.bind.annotation.RestController
 public class RestController {
@@ -35,76 +29,124 @@ public class RestController {
     @Qualifier(Sale.REPOSITORY)
     private SaleRepository saleRepository;
 
+    @Autowired
+    @Qualifier(SaleComment.REPOSITORY)
+    private SaleCommentRepository saleCommentRepository;
+
 
     @RequestMapping("/cities")
-    public Iterable<City> getCities() {
-        return cityRepository.getAll();
+    public UniversalDTO<Iterable<City>> getCities() {
+        UniversalDTO<Iterable<City>> result = new UniversalDTO<>(true, "Ошибка при поиске городов", null);
+        Iterable<City> cities = cityRepository.getAll();
+        if (cities != null) {
+            result = new UniversalDTO<>(false, "", cities);
+        }
+        return result;
     }
 
     @RequestMapping("/categories")
-    public Iterable<Category> getCategories(@RequestParam(value = "city", defaultValue = "-1") int cityId) {
-        return categoryRepository.getForCity(cityId);
+    public UniversalDTO<Iterable<Category>> getCategories(@RequestParam(value = "city", defaultValue = "-1") int cityId) {
+        if (cityId == -1) {
+            return new UniversalDTO<>(true, "Не указан город", null);
+        }
+        UniversalDTO<Iterable<Category>> result = new UniversalDTO<>(true, "Ошибка при поиске категорий", null);
+        Iterable<Category> categories = categoryRepository.getForCity(cityId);
+        if (categories != null) {
+            result = new UniversalDTO<>(false, "", categories);
+        }
+        return result;
     }
 
     @RequestMapping("/shops")
-    public Iterable<Shop> getShopsForCity(@RequestParam(value = "city", defaultValue = "-1") int cityId) {
-        return shopRepository.getForCity(cityId);
+    public UniversalDTO<Iterable<Shop>> getShopsForCity(@RequestParam(value = "city", defaultValue = "-1") int cityId) {
+        if (cityId == -1) {
+            return new UniversalDTO<>(true, "Не указан город", null);
+        }
+        UniversalDTO<Iterable<Shop>> result = new UniversalDTO<>(true, "Ошибка при поиске магазинов", null);
+        Iterable<Shop> shops = shopRepository.getForCity(cityId);
+        if (shops != null) {
+            result = new UniversalDTO<>(false, "", shops);
+        }
+        return result;
     }
 
     @RequestMapping("/sales")
-    public Iterable<Sale> getSales(
+    public UniversalDTO<Iterable<Sale>> getSales(
             @RequestParam(value = "city", defaultValue = "-1") int cityId,
             @RequestParam(value = "shop", defaultValue = "") String shop) {
-        return saleRepository.getForShop(cityId, shop);
+        if (cityId == -1 || shop.isEmpty()) {
+            return new UniversalDTO<>(true, "Неверные входные параметры", null);
+        }
+        UniversalDTO<Iterable<Sale>> result = new UniversalDTO<>(true, "Ошибка при поиске акций", null);
+        Iterable<Sale> sales = saleRepository.getForShop(cityId, shop);
+        if (sales != null) {
+            result = new UniversalDTO<>(false, "", sales);
+        }
+        return result;
     }
 
     @RequestMapping("/sale")
-    public Sale getSale(
+    public UniversalDTO<Sale> getSale(
             @RequestParam(value = "city", defaultValue = "-1") int city,
             @RequestParam(value = "id", defaultValue = "-1") int id) {
-        Sale result = null;
-        if (id != -1 && city != -1) {
-            result = saleRepository.getWithId(city, id);
+        if (city == -1 || id == -1) {
+            return new UniversalDTO<>(true, "Неверные входные параметры", null);
+        }
+        UniversalDTO<Sale> result;
+        Sale sale = saleRepository.getWithId(city, id);
+        if (sale == null) {
+            result = new UniversalDTO<>(true, "Акция не найдена", null);
+        } else {
+            result = new UniversalDTO<>(false, "", sale);
         }
         return result;
     }
 
     @RequestMapping("/comments")
-    public Iterable<SaleComment> getComments(@RequestParam(value = "sale_id", defaultValue = "") int saleId) {
-        return APIFactory.getAPI().getComments(saleId, 1)
-                .subscribeOn(Schedulers.newThread())
-                .map((Func1<SaleCommentsDTO, Iterable<SaleComment>>) saleCommentsDTO -> {
-                    ArrayList<SaleComment> result = new ArrayList<>();
-                    if (!saleCommentsDTO.isError() && saleCommentsDTO.getComments() != null) {
-                        result.addAll(saleCommentsDTO.getComments());
-                    }
-                    return result;
-                })
-                .toBlocking()
-                .first();
+    public UniversalDTO<Iterable<SaleComment>> getComments(@RequestParam(value = "sale_id", defaultValue = "") int saleId) {
+        if (saleId == -1) {
+            return new UniversalDTO<>(true, "Неверные входные параметры", null);
+        }
+        UniversalDTO<Iterable<SaleComment>> result = new UniversalDTO<>(true, "Ошибка при поиске комментариев", null);
+        Iterable<SaleComment> comments = saleCommentRepository.getForSaleId(saleId);
+        if (comments != null) {
+            result = new UniversalDTO<>(false, "", comments);
+        }
+        return result;
     }
 
     @RequestMapping("/comments/new")
-    public Result<SaleComment> sendComment(
+    public UniversalDTO<SaleComment> sendComment(
             @RequestParam(value = "author", defaultValue = "") String author,
+            @RequestParam(value = "whom", defaultValue = "") String whom,
             @RequestParam(value = "text", defaultValue = "") String text,
-            @RequestParam(value = "city_id", defaultValue = "-1") int cityId,
+            @RequestParam(value = "city", defaultValue = "-1") int cityId,
             @RequestParam(value = "sale_id", defaultValue = "-1") int saleId) {
         if (cityId == -1 || saleId == -1 || author.isEmpty() || text.isEmpty()) {
-            return new Result<>(false, "Empty field", null);
+            return new UniversalDTO<>(true, "Не все поля заполнены", null);
         }
-        return APIFactory.getAPI().sendComment(author, text, cityId, saleId, 1)
+        Calendar currentDate = Calendar.getInstance();
+        long dateTime = currentDate.getTimeInMillis();
+        SaleComment saleComment = new SaleComment(saleId, author, whom, text, dateTime);
+        saleCommentRepository.save(saleComment);
+        /*APIFactory.getAPI().sendComment(author, text, cityId, saleId, 1)
                 .subscribeOn(Schedulers.newThread())
-                .map(saleCommentDTO -> {
-                    if (saleCommentDTO.isError()) {
-                        return new Result<SaleComment>(false, "Any error", null);
-                    } else{
-                        SaleComment comment = saleCommentDTO.getComment();
-                        comment.setSaleId(saleId);
-                        return new Result<>(true, "", comment);
+                .subscribe(new Observer<SaleCommentDTO>() {
+                    @Override
+                    public void onCompleted() {
+
                     }
-                })
-                .toBlocking()
-                .first();
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(SaleCommentDTO saleCommentDTO) {
+
+                    }
+                });*/
+        return new UniversalDTO<>(false, "", saleComment);
     }
 }

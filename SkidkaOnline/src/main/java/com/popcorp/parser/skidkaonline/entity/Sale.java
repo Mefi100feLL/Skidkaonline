@@ -15,7 +15,7 @@ public class Sale implements DomainObject{
     private int cityId;
     private int imageWidth;
     private int imageHeight;
-
+    private int countComments;
 
     public Sale(int id, String shopUrl, String imageSmall, String imageBig, long periodStart, long periodEnd, String catalog, String cityUrl, int cityId, int imageWidth, int imageHeight) {
         this.id = id;
@@ -124,5 +124,13 @@ public class Sale implements DomainObject{
 
     public void setCityId(int cityId) {
         this.cityId = cityId;
+    }
+
+    public int getCountComments() {
+        return countComments;
+    }
+
+    public void setCountComments(int countComments) {
+        this.countComments = countComments;
     }
 }

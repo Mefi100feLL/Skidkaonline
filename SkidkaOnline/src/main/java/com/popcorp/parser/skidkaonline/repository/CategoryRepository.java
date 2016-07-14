@@ -1,6 +1,7 @@
 package com.popcorp.parser.skidkaonline.repository;
 
 import com.popcorp.parser.skidkaonline.entity.Category;
+import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -39,7 +40,7 @@ public class CategoryRepository implements DataRepository<Category> {
         if (countOfUpdated == 0) {
             try {
                 result = jdbcOperations.update("INSERT INTO " + TABLE_CATEGORIES + " " + COLUMNS_CATEGORIES + " VALUES (?, ?);", params, types);
-            } catch (Exception e){
+            } catch (Exception e) {
                 result = 1;
             }
         } else {
@@ -112,15 +113,21 @@ public class CategoryRepository implements DataRepository<Category> {
 
     public Iterable<Category> getForCity(int cityId) {
         ArrayList<Category> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
-                " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_CITY_ID + "=" + cityId + ";");
-        while (rowSet.next()) {
-            result.add(getCategory(rowSet));
+        try {
+            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
+                    " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_CITY_ID + "=" + cityId + ";");
+            while (rowSet.next()) {
+                result.add(getCategory(rowSet));
+            }
+        } catch (Exception e) {
+            ErrorManager.sendError(e.getMessage());
+            e.printStackTrace();
+            return null;
         }
         return result;
     }
 
-    private Category getCategory(SqlRowSet rowSet){
+    private Category getCategory(SqlRowSet rowSet) {
         return new Category(
                 rowSet.getString(COLUMNS_NAME),
                 rowSet.getString(COLUMNS_URL),

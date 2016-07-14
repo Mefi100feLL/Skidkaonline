@@ -3,6 +3,7 @@ package com.popcorp.parser.skidkaonline.net;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -23,6 +24,7 @@ public class APIFactory {
             Retrofit retrofit = new Retrofit.Builder()
                     .client(okHttpClientBuilder.build())
                     .baseUrl("https://skidkaonline.ru")
+                    .addConverterFactory(GsonConverterFactory.create())
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create()).build();
 
             api = retrofit.create(API.class);

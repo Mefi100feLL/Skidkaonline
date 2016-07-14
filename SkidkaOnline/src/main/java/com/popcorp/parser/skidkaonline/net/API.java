@@ -40,7 +40,7 @@ public interface API {
 
     );
 
-    @POST("/product/ajaxgetcomments/")
-    Observable<SaleCommentsDTO> getComments(@Field("product_id") int saleId,
-                                            @Field("is_ajax") int isAjax);
+    @GET("/product/ajaxgetcomments/")
+    Observable<SaleCommentsDTO> getComments(@Query("product_id") int saleId,
+                                            @Query("is_ajax") int isAjax);
 }

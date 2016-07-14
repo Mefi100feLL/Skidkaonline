@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import com.popcorp.parser.skidkaonline.entity.SaleComment;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class SaleCommentsDTO {
 
@@ -11,9 +12,9 @@ public class SaleCommentsDTO {
     private boolean error;
 
     @SerializedName("comments")
-    private ArrayList<SaleComment> comments;
+    private List<SaleComment> comments;
 
-    public ArrayList<SaleComment> getComments() {
+    public List<SaleComment> getComments() {
         return comments;
     }
 

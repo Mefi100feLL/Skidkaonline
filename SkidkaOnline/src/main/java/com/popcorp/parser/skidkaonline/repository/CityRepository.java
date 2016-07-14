@@ -1,6 +1,7 @@
 package com.popcorp.parser.skidkaonline.repository;
 
 import com.popcorp.parser.skidkaonline.entity.City;
+import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -72,15 +73,21 @@ public class CityRepository implements DataRepository<City> {
     @Override
     public Iterable<City> getAll() {
         ArrayList<City> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CITIES + ";");
-        while (rowSet.next()) {
-            City city = new City(
-                    rowSet.getInt(COLUMNS_ID),
-                    rowSet.getString(COLUMNS_NAME),
-                    rowSet.getString(COLUMNS_URL),
-                    rowSet.getString(COLUMNS_REGION)
-            );
-            result.add(city);
+        try {
+            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CITIES + ";");
+            while (rowSet.next()) {
+                City city = new City(
+                        rowSet.getInt(COLUMNS_ID),
+                        rowSet.getString(COLUMNS_NAME),
+                        rowSet.getString(COLUMNS_URL),
+                        rowSet.getString(COLUMNS_REGION)
+                );
+                result.add(city);
+            }
+        } catch (Exception e){
+            ErrorManager.sendError(e.getMessage());
+            e.printStackTrace();
+            return null;
         }
         return result;
     }

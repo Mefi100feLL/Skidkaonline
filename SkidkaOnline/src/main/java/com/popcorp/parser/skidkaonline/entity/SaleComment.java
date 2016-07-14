@@ -1,29 +1,30 @@
 package com.popcorp.parser.skidkaonline.entity;
 
-import com.google.gson.annotations.SerializedName;
+public class SaleComment implements DomainObject{
 
-public class SaleComment {
+    public static final String REPOSITORY = "saleCommentRepository";
 
     private int saleId;
-
-    @SerializedName("username")
-    private String userName;
-
-    @SerializedName("created")
-    private String createdTime;
-
-    @SerializedName("comment")
+    private String author;
+    private String whom;
     private String text;
+    private long dateTime;
 
-    @SerializedName("cityname")
-    private String cityName;
-
-    public SaleComment(int saleId, String userName, String createdTime, String text, String cityName) {
+    public SaleComment(int saleId, String author, String whom, String text, long dateTime) {
         this.saleId = saleId;
-        this.userName = userName;
-        this.createdTime = createdTime;
+        this.author = author;
+        this.whom = whom;
         this.text = text;
-        this.cityName = cityName;
+        this.dateTime = dateTime;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (!(object instanceof SaleComment)) return false;
+        SaleComment saleComment = (SaleComment) object;
+        return getSaleId() == saleComment.getSaleId()
+                && getAuthor().equals(saleComment.getAuthor())
+                && getDateTime() == saleComment.getDateTime();
     }
 
     public int getSaleId() {
@@ -34,20 +35,20 @@ public class SaleComment {
         this.saleId = saleId;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getAuthor() {
+        return author;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
-    public String getCreatedTime() {
-        return createdTime;
+    public String getWhom() {
+        return whom;
     }
 
-    public void setCreatedTime(String createdTime) {
-        this.createdTime = createdTime;
+    public void setWhom(String whom) {
+        this.whom = whom;
     }
 
     public String getText() {
@@ -58,11 +59,11 @@ public class SaleComment {
         this.text = text;
     }
 
-    public String getCityName() {
-        return cityName;
+    public long getDateTime() {
+        return dateTime;
     }
 
-    public void setCityName(String cityName) {
-        this.cityName = cityName;
+    public void setDateTime(long dateTime) {
+        this.dateTime = dateTime;
     }
 }

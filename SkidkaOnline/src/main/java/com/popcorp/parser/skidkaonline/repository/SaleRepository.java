@@ -1,7 +1,10 @@
 package com.popcorp.parser.skidkaonline.repository;
 
 import com.popcorp.parser.skidkaonline.entity.Sale;
+import com.popcorp.parser.skidkaonline.entity.SaleComment;
+import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
@@ -57,6 +60,10 @@ public class SaleRepository implements DataRepository<Sale> {
     @Autowired
     protected JdbcOperations jdbcOperations;
 
+    @Autowired
+    @Qualifier(SaleComment.REPOSITORY)
+    private SaleCommentRepository saleCommentRepository;
+
     @Override
     public int save(Sale object) {
         Object[] params = new Object[]{
@@ -106,7 +113,7 @@ public class SaleRepository implements DataRepository<Sale> {
                             Types.INTEGER,
                             Types.VARCHAR
                     });
-        } catch (Exception e){
+        } catch (Exception e) {
             return 1;
         }
     }
@@ -151,7 +158,7 @@ public class SaleRepository implements DataRepository<Sale> {
     }
 
     private Sale getSale(SqlRowSet rowSet) {
-        return new Sale(
+        Sale result = new Sale(
                 rowSet.getInt(COLUMNS_ID),
                 rowSet.getString(COLUMNS_SHOP_URL),
                 rowSet.getString(COLUMNS_IMAGE_SMALL),
@@ -164,25 +171,55 @@ public class SaleRepository implements DataRepository<Sale> {
                 rowSet.getInt(COLUMNS_IMAGE_WIDTH),
                 rowSet.getInt(COLUMNS_IMAGE_HEIGHT)
         );
+        result.setCountComments(saleCommentRepository.getCountForSaleId(result.getId()));
+        return result;
     }
 
     public Iterable<Sale> getForShop(int cityId, String shop) {
         ArrayList<Sale> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SALES + " INNER JOIN " + TABLE_SALES_CITIES + " ON " + COLUMNS_ID + "=" + COLUMNS_SALE_ID +
-                " WHERE " + COLUMNS_CITY_ID + "=" + cityId + " AND " + COLUMNS_SHOP_URL + "='" + shop + "';");
-        while (rowSet.next()) {
-            Sale sale = getSale(rowSet);
-            result.add(sale);
+        try {
+            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SALES + " INNER JOIN " + TABLE_SALES_CITIES + " ON " + COLUMNS_ID + "=" + COLUMNS_SALE_ID +
+                    " WHERE " + COLUMNS_CITY_ID + "=" + cityId + " AND " + COLUMNS_SHOP_URL + "='" + shop + "';");
+            while (rowSet.next()) {
+                Sale sale = getSale(rowSet);
+                result.add(sale);
+            }
+        } catch (Exception e) {
+            ErrorManager.sendError(e.getMessage());
+            e.printStackTrace();
+            return null;
         }
         return result;
     }
 
     public Sale getWithId(int cityId, int id) {
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SALES + " INNER JOIN " + TABLE_SALES_CITIES + " ON " + COLUMNS_ID + "=" + COLUMNS_SALE_ID +
-                " WHERE " + COLUMNS_CITY_URL + "=" + cityId + " AND " + COLUMNS_ID + "=" + id + ";");
-        if (rowSet.next()) {
-            return getSale(rowSet);
+        try {
+            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SALES + " INNER JOIN " + TABLE_SALES_CITIES + " ON " + COLUMNS_ID + "=" + COLUMNS_SALE_ID +
+                    " WHERE " + COLUMNS_CITY_URL + "=" + cityId + " AND " + COLUMNS_ID + "=" + id + ";");
+            if (rowSet.next()) {
+                return getSale(rowSet);
+            }
+        } catch (Exception e) {
+            ErrorManager.sendError(e.getMessage());
+            e.printStackTrace();
+            return null;
         }
         return null;
+    }
+
+    public void remove(int cityId, int saleId) {
+        if (getCountInCities(saleId) > 1) {
+            jdbcOperations.update("DELETE FROM " + TABLE_SALES_CITIES + " WHERE " + COLUMNS_CITY_ID + "=" + cityId + " AND " + COLUMNS_SALE_ID + "=" + saleId + ";");
+        } else {
+            jdbcOperations.update("DELETE FROM " + TABLE_SALES + " WHERE " + COLUMNS_ID + "=" + saleId + ";");
+        }
+    }
+
+    public int getCountInCities(int saleId) {
+        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT COUNT(*) AS count FROM " + TABLE_SALES_CITIES + " WHERE " + COLUMNS_SALE_ID + "=" + saleId + ";");
+        if (rowSet.next()) {
+            return rowSet.getInt("count");
+        }
+        return 0;
     }
 }

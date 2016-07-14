@@ -2,6 +2,7 @@ package com.popcorp.parser.skidkaonline.repository;
 
 import com.popcorp.parser.skidkaonline.entity.Category;
 import com.popcorp.parser.skidkaonline.entity.Shop;
+import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -25,7 +26,7 @@ public class ShopsRepository implements DataRepository<Shop> {
             COLUMNS_IMAGE + ")";
 
     private static final String COLUMNS_SHOPS_UPDATE =
-                    COLUMNS_NAME + "=?, " +
+            COLUMNS_NAME + "=?, " +
                     COLUMNS_IMAGE + "=?";
 
 
@@ -55,7 +56,7 @@ public class ShopsRepository implements DataRepository<Shop> {
         if (countOfUpdated == 0) {
             try {
                 result = jdbcOperations.update("INSERT INTO " + TABLE_SHOPS + " " + COLUMNS_SHOPS + " VALUES (?, ?, ?);", params, types);
-            } catch (Exception e){
+            } catch (Exception e) {
                 result = 1;
             }
         } else {
@@ -154,10 +155,16 @@ public class ShopsRepository implements DataRepository<Shop> {
 
     public Iterable<Shop> getForCity(int cityId) {
         ArrayList<Shop> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SHOPS + " INNER JOIN " + TABLE_SHOPS_FOR_CATEG_CITIES + " ON " + COLUMNS_URL + "=" + COLUMNS_SHOP_URL +
-                " WHERE " + COLUMNS_CITY_ID + "=" + cityId + ";");
-        while (rowSet.next()) {
-            result.add(getShop(rowSet));
+        try {
+            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_SHOPS + " INNER JOIN " + TABLE_SHOPS_FOR_CATEG_CITIES + " ON " + COLUMNS_URL + "=" + COLUMNS_SHOP_URL +
+                    " WHERE " + COLUMNS_CITY_ID + "=" + cityId + ";");
+            while (rowSet.next()) {
+                result.add(getShop(rowSet));
+            }
+        } catch (Exception e) {
+            ErrorManager.sendError(e.getMessage());
+            e.printStackTrace();
+            return null;
         }
         return result;
     }
