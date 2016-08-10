@@ -1,13 +1,9 @@
 package com.popcorp.parser.skidkaonline.util;
 
-import com.popcorp.parser.skidkaonline.Application;
-import com.popcorp.parser.skidkaonline.entity.Error;
-
-import java.util.Properties;
-
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.util.Properties;
 
 public class SenderTLS {
 
@@ -48,7 +44,7 @@ public class SenderTLS {
             //Отправляем сообщение
             Transport.send(message);
         } catch (MessagingException e) {
-            Application.getErrorRepository().save(new Error(subject, e.getMessage()));
+            //Application.getErrorRepository().save(new Error(subject, e.getMessage()));
         }
     }
 }

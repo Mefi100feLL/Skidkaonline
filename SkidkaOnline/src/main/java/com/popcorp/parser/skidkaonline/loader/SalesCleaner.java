@@ -29,7 +29,7 @@ public class SalesCleaner {
                         saleTime.set(Calendar.HOUR_OF_DAY, 0);
                         saleTime.set(Calendar.MINUTE, 30);
                         if (cityTime.getTimeInMillis() > saleTime.getTimeInMillis()) {
-                            saleRepository.remove(city.getId(), sale.getId());
+                            saleRepository.remove(sale);
                         }
                     }
                 }

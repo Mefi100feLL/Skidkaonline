@@ -3,6 +3,7 @@ package com.popcorp.parser.skidkaonline.entity;
 public class Sale implements DomainObject{
 
     public static final String REPOSITORY = "saleRepository";
+    public static final String CITY_REPOSITORY = "saleCityRepository";
 
     private int id;
     private String shopUrl;

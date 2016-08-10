@@ -3,6 +3,7 @@ package com.popcorp.parser.skidkaonline.entity;
 public class Shop implements DomainObject {
 
     public static final String REPOSITORY = "shopRepository";
+    public static final String CITY_REPOSITORY = "shopCityRepository";
 
     private String name;
     private String image;

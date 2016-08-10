@@ -2,6 +2,7 @@ package com.popcorp.parser.skidkaonline.parser;
 
 import com.popcorp.parser.skidkaonline.entity.Sale;
 import com.popcorp.parser.skidkaonline.entity.Shop;
+import com.popcorp.parser.skidkaonline.error.ShopNoFoundException;
 import com.popcorp.parser.skidkaonline.net.APIFactory;
 import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import rx.Observable;
@@ -47,7 +48,12 @@ public class SalesParser {
                         return null;
                     }
                     return getSalesForPage(shop, pageString);
-                }).toBlocking().first();
+                })
+                .onErrorResumeNext(throwable -> {
+                    return Observable.error(new ShopNoFoundException(shop, throwable));
+                })
+                .toBlocking()
+                .first();
     }
 
     private static ArrayList<Sale> getSalesForPage(Shop shop, String page) {
@@ -122,7 +128,7 @@ public class SalesParser {
             }
         }
 
-        Matcher imageMathcer = Pattern.compile("<img src=\"[.[^\"]]*\" width=\"[0-9]*\" height=\"[0-9]*\"").matcher(page);
+        Matcher imageMathcer = Pattern.compile("<img src=\"[.[^\"]]*\" data-fw=\"[0-9]*\" data-fh=\"[0-9]*\" height=\"[0-9]*\"").matcher(page);
         while (imageMathcer.find()) {
             String imageResult = imageMathcer.group();
             Matcher imageSmallMathcer = Pattern.compile("src=\"[.[^\"]]*\"").matcher(imageResult);
@@ -132,16 +138,18 @@ public class SalesParser {
                 smallImages.add(smallImage);
                 bigImages.add(smallImage.replaceFirst("-[0-9]*\\.", "."));
             }
-            Matcher widthMatcher = Pattern.compile("width=\"[0-9]*\"").matcher(imageResult);
-            if (widthMatcher.find()) {
-                String widthResult = widthMatcher.group();
-                widths.add(Integer.valueOf(widthResult.substring(7, widthResult.length() - 1)));
-            }
             Matcher heightMatcher = Pattern.compile("height=\"[0-9]*\"").matcher(imageResult);
             if (heightMatcher.find()) {
                 String heightResult = heightMatcher.group();
                 heights.add(Integer.valueOf(heightResult.substring(8, heightResult.length() - 1)));
             }
+
+            widths.add(336);
+            /*Matcher widthMatcher = Pattern.compile("width=\"[0-9]*\"").matcher(imageResult);
+            if (widthMatcher.find()) {
+                String widthResult = widthMatcher.group();
+                widths.add(Integer.valueOf(widthResult.substring(7, widthResult.length() - 1)));
+            }*/
         }
 
         if (ids.size() == catalogs.size() &&

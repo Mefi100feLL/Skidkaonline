@@ -4,6 +4,7 @@ import com.popcorp.parser.skidkaonline.Application;
 import com.popcorp.parser.skidkaonline.entity.City;
 import com.popcorp.parser.skidkaonline.entity.Sale;
 import com.popcorp.parser.skidkaonline.entity.Shop;
+import com.popcorp.parser.skidkaonline.error.ShopNoFoundException;
 import com.popcorp.parser.skidkaonline.net.APIFactory;
 import com.popcorp.parser.skidkaonline.parser.SalesParser;
 import com.popcorp.parser.skidkaonline.repository.CityRepository;
@@ -36,8 +37,14 @@ public class SalesLoader {
 
                                 @Override
                                 public void onError(Throwable e) {
-                                    ErrorManager.sendError("SkidkaOnline: Error loading sales error: " + e.getMessage());
-                                    e.printStackTrace();
+                                    if (e instanceof ShopNoFoundException){
+                                        shopsRepository.remove(((ShopNoFoundException) e).getShop());
+                                    } else if (e.getCause() instanceof ShopNoFoundException){
+                                        shopsRepository.remove(((ShopNoFoundException) e.getCause()).getShop());
+                                    } else {
+                                        ErrorManager.sendError("SkidkaOnline: Error loading sales error: " + e.getMessage());
+                                        e.printStackTrace();
+                                    }
                                 }
 
                                 @Override

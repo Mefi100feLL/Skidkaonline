@@ -11,37 +11,80 @@ import java.util.ArrayList;
 @org.springframework.stereotype.Repository(Error.REPOSITORY)
 public class ErrorRepository implements DataRepository<Error> {
 
-    private static final String TABLE_ERRORS = "errors";
+    private static final String TABLE = "errors";
 
-    private static final String COLUMNS_BODY = "body";
-    private static final String COLUMNS_SUBJECT = "subject";
+    private static final String COLUMN_BODY = "body";
+    private static final String COLUMN_SUBJECT = "subject";
+    private static final String COLUMN_DATETIME = "datetime";
 
-    private static final String COLUMNS_ERRORS = "(" + COLUMNS_BODY + ", " + COLUMNS_SUBJECT + ")";
+    private static final String[] COLUMNS = new String[]{
+            COLUMN_BODY,
+            COLUMN_SUBJECT,
+            COLUMN_DATETIME
+    };
 
     @Autowired
     protected JdbcOperations jdbcOperations;
 
     @Override
     public int save(Error object) {
-        Object[] params = new Object[]{object.getBody(), object.getSubject()};
-        int[] types = new int[]{Types.VARCHAR, Types.VARCHAR};
+        Object[] params = new Object[]{
+                object.getBody(),
+                object.getSubject(),
+                object.getDateTime()
+        };
+        int[] types = new int[]{
+                Types.VARCHAR,
+                Types.VARCHAR,
+                Types.VARCHAR
+        };
 
-        int result = 1;
-        try {
-            result = jdbcOperations.update("INSERT INTO " + TABLE_ERRORS + " " + COLUMNS_ERRORS + " VALUES (?, ?);", params, types);
-        } catch (Exception e) {
-            result = 1;
+        int result = update(object);
+        if (result == 0) {
+            result = DB.insert(jdbcOperations, TABLE, COLUMNS, params, types);
         }
+
         return result;
     }
 
     @Override
     public int update(Error object) {
-        return 0;
+        Object[] params = new Object[]{
+                object.getBody(),
+                object.getSubject(),
+                object.getDateTime(),
+                object.getBody(),
+                object.getSubject(),
+                object.getDateTime()
+        };
+
+        String[] setColumns = new String[]{
+                COLUMN_BODY,
+                COLUMN_SUBJECT,
+                COLUMN_DATETIME
+        };
+        String[] selectionColumns = new String[]{
+                COLUMN_BODY,
+                COLUMN_SUBJECT,
+                COLUMN_DATETIME
+        };
+
+        return DB.update(jdbcOperations, TABLE, setColumns, selectionColumns, params);
     }
 
-    public boolean exist(Error object) {
-        return jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_ERRORS + " WHERE " + COLUMNS_BODY + "='" + object.getBody() + "' AND " + COLUMNS_SUBJECT + "='" + object.getSubject() + "';").next();
+    @Override
+    public int remove(Error object) {
+        String[] selectionColumns = new String[]{
+                COLUMN_BODY,
+                COLUMN_SUBJECT,
+                COLUMN_DATETIME
+        };
+        Object[] selectionValues = new Object[]{
+                object.getBody(),
+                object.getSubject(),
+                object.getDateTime()
+        };
+        return DB.remove(jdbcOperations, TABLE, selectionColumns, selectionValues);
     }
 
     @Override
@@ -56,15 +99,21 @@ public class ErrorRepository implements DataRepository<Error> {
     @Override
     public Iterable<Error> getAll() {
         ArrayList<Error> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_ERRORS + ";");
-        while (rowSet.next()) {
-            Error city = new Error(rowSet.getString(COLUMNS_SUBJECT), rowSet.getString(COLUMNS_BODY));
-            result.add(city);
+        SqlRowSet rowSet = DB.getAll(jdbcOperations, TABLE);
+        if (rowSet != null) {
+            while (rowSet.next()) {
+                result.add(getError(rowSet));
+            }
         }
         return result;
     }
 
-    public int remove(Error error) {
-        return jdbcOperations.update("DELETE FROM " + TABLE_ERRORS + " WHERE " + COLUMNS_SUBJECT + "='" + error.getSubject() + "' AND " + COLUMNS_BODY + "='" + error.getBody() + "';");
+    private Error getError(SqlRowSet rowSet) {
+        return new Error(
+                rowSet.getString(COLUMN_SUBJECT),
+                rowSet.getString(COLUMN_BODY),
+                rowSet.getString(COLUMN_DATETIME)
+        );
     }
+
 }

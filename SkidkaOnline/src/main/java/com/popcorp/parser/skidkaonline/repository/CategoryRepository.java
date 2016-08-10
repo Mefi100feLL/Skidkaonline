@@ -3,6 +3,7 @@ package com.popcorp.parser.skidkaonline.repository;
 import com.popcorp.parser.skidkaonline.entity.Category;
 import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
@@ -12,17 +13,23 @@ import java.util.ArrayList;
 @org.springframework.stereotype.Repository(Category.REPOSITORY)
 public class CategoryRepository implements DataRepository<Category> {
 
-    private static final String TABLE_CATEGORIES = "categories";
+    private static final String TABLE = "categories";
 
-    private static final String COLUMNS_NAME = "name";
-    private static final String COLUMNS_URL = "url";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_URL = "url";
 
-    private static final String COLUMNS_CATEGORIES = "(" + COLUMNS_NAME + ", " + COLUMNS_URL + ")";
-
-    private static final String COLUMNS_CATEGORIES_UPDATE = COLUMNS_NAME + "=?";
+    private static final String[] COLUMNS = new String[]{
+            COLUMN_NAME,
+            COLUMN_URL
+    };
 
     @Autowired
     protected JdbcOperations jdbcOperations;
+
+    @Autowired
+    @Qualifier(Category.CITY_REPOSITORY)
+    private CategoryCityRepository categoryCityRepository;
+
 
     @Override
     public int save(Category object) {
@@ -35,19 +42,12 @@ public class CategoryRepository implements DataRepository<Category> {
                 Types.VARCHAR
         };
 
-        int result;
-        int countOfUpdated = update(object);
-        if (countOfUpdated == 0) {
-            try {
-                result = jdbcOperations.update("INSERT INTO " + TABLE_CATEGORIES + " " + COLUMNS_CATEGORIES + " VALUES (?, ?);", params, types);
-            } catch (Exception e) {
-                result = 1;
-            }
-        } else {
-            result = countOfUpdated;
+        int result = update(object);
+        if (result == 0) {
+            result = DB.insert(jdbcOperations, TABLE, COLUMNS, params, types);
         }
 
-        saveInCities(object);
+        categoryCityRepository.save(object);
         return result;
     }
 
@@ -58,37 +58,18 @@ public class CategoryRepository implements DataRepository<Category> {
                 object.getUrl()
         };
 
-        return jdbcOperations.update("UPDATE " + TABLE_CATEGORIES + " SET " + COLUMNS_CATEGORIES_UPDATE + " WHERE " +
-                COLUMNS_URL + "=?;", params);
+        return DB.update(jdbcOperations, TABLE, new String[]{COLUMN_NAME}, new String[]{COLUMN_URL}, params);
     }
 
-
-    private static final String TABLE_CATEGORIES_FOR_CITIES = "city_categories";
-
-    private static final String COLUMNS_CITY_URL = "city_url";
-    private static final String COLUMNS_CITY_ID = "city_id";
-    private static final String COLUMNS_CATEGORY_URL = "category_url";
-
-
-    private static final String COLUMNS_CATEGORIES_WITH_CITIES = "(" + COLUMNS_CITY_URL + ", " + COLUMNS_CITY_ID + ", " + COLUMNS_CATEGORY_URL + ")";
-
-
-    private int saveInCities(Category object) {
-        Object[] params = new Object[]{
-                object.getCityUrl(),
-                object.getCityId(),
-                object.getUrl()
-        };
-        int[] types = new int[]{
-                Types.VARCHAR,
-                Types.INTEGER,
-                Types.VARCHAR
-        };
-
-        try {
-            return jdbcOperations.update("INSERT INTO " + TABLE_CATEGORIES_FOR_CITIES + " " + COLUMNS_CATEGORIES_WITH_CITIES + " VALUES (?, ?, ?);", params, types);
-        } catch (Exception e) {
-            return 1;
+    @Override
+    public int remove(Category object) {
+        // Если такая категория для многих городов
+        if (categoryCityRepository.getCount(object) > 1) {
+            //удаляем только для текущего города
+            return categoryCityRepository.remove(object);
+        } else {
+            //удаляем категорию полностью, из городов удалится каскадно
+            return DB.remove(jdbcOperations, TABLE, new String[]{COLUMN_URL}, new Object[]{object.getUrl()});
         }
     }
 
@@ -104,7 +85,7 @@ public class CategoryRepository implements DataRepository<Category> {
     @Override
     public Iterable<Category> getAll() {
         ArrayList<Category> result = new ArrayList<>();
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES + " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + ";");
+        SqlRowSet rowSet = DB.getAllWithInnerJoin(jdbcOperations, TABLE, CategoryCityRepository.TABLE, COLUMN_URL, CategoryCityRepository.COLUMN_CATEGORY_URL);
         while (rowSet.next()) {
             result.add(getCategory(rowSet));
         }
@@ -114,10 +95,11 @@ public class CategoryRepository implements DataRepository<Category> {
     public Iterable<Category> getForCity(int cityId) {
         ArrayList<Category> result = new ArrayList<>();
         try {
-            SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
-                    " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_CITY_ID + "=" + cityId + ";");
-            while (rowSet.next()) {
-                result.add(getCategory(rowSet));
+            SqlRowSet rowSet = DB.getWithInnerJoin(jdbcOperations, TABLE, CategoryCityRepository.TABLE, COLUMN_URL, CategoryCityRepository.COLUMN_CATEGORY_URL, new String[]{CategoryCityRepository.COLUMN_CITY_ID}, new Object[]{cityId});
+            if (rowSet != null) {
+                while (rowSet.next()) {
+                    result.add(getCategory(rowSet));
+                }
             }
         } catch (Exception e) {
             ErrorManager.sendError(e.getMessage());
@@ -129,18 +111,17 @@ public class CategoryRepository implements DataRepository<Category> {
 
     private Category getCategory(SqlRowSet rowSet) {
         return new Category(
-                rowSet.getString(COLUMNS_NAME),
-                rowSet.getString(COLUMNS_URL),
-                rowSet.getString(COLUMNS_CITY_URL),
-                rowSet.getInt(COLUMNS_CITY_ID)
+                rowSet.getString(COLUMN_NAME),
+                rowSet.getString(COLUMN_URL),
+                rowSet.getString(CategoryCityRepository.COLUMN_CITY_URL),
+                rowSet.getInt(CategoryCityRepository.COLUMN_CITY_ID)
         );
     }
 
     public Category getWithUrl(String url) {
         Category result = null;
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
-                " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_URL + "='" + url + "';");
-        if (rowSet.next()) {
+        SqlRowSet rowSet = DB.getWithInnerJoin(jdbcOperations, TABLE, CategoryCityRepository.TABLE, COLUMN_URL, CategoryCityRepository.COLUMN_CATEGORY_URL, new String[]{COLUMN_URL}, new Object[]{url});
+        if (rowSet != null && rowSet.next()) {
             result = getCategory(rowSet);
         }
         return result;
@@ -148,9 +129,16 @@ public class CategoryRepository implements DataRepository<Category> {
 
     public Category getWithUrlAndCityId(String url, int cityId) {
         Category result = null;
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
-                " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_URL + "='" + url + "' AND " + COLUMNS_CITY_ID + "=" + cityId + ";");
-        if (rowSet.next()) {
+        String[] selectionColumns = new String[]{
+                COLUMN_URL,
+                CategoryCityRepository.COLUMN_CITY_ID
+        };
+        Object[] selectionValues = new Object[]{
+                url,
+                cityId
+        };
+        SqlRowSet rowSet = DB.getWithInnerJoin(jdbcOperations, TABLE, CategoryCityRepository.TABLE, COLUMN_URL, CategoryCityRepository.COLUMN_CATEGORY_URL, selectionColumns, selectionValues);
+        if (rowSet != null && rowSet.next()) {
             result = getCategory(rowSet);
         }
         return result;
@@ -158,9 +146,16 @@ public class CategoryRepository implements DataRepository<Category> {
 
     public Category getWithNameAndCityId(String name, int cityId) {
         Category result = null;
-        SqlRowSet rowSet = jdbcOperations.queryForRowSet("SELECT * FROM " + TABLE_CATEGORIES + " INNER JOIN " + TABLE_CATEGORIES_FOR_CITIES +
-                " ON " + COLUMNS_URL + "=" + COLUMNS_CATEGORY_URL + " WHERE " + COLUMNS_NAME + "='" + name + "' AND " + COLUMNS_CITY_ID + "=" + cityId + ";");
-        if (rowSet.next()) {
+        String[] selectionColumns = new String[]{
+                COLUMN_NAME,
+                CategoryCityRepository.COLUMN_CITY_ID
+        };
+        Object[] selectionValues = new Object[]{
+                name,
+                cityId
+        };
+        SqlRowSet rowSet = DB.getWithInnerJoin(jdbcOperations, TABLE, CategoryCityRepository.TABLE, COLUMN_URL, CategoryCityRepository.COLUMN_CATEGORY_URL, selectionColumns, selectionValues);
+        if (rowSet != null && rowSet.next()) {
             result = getCategory(rowSet);
         }
         return result;

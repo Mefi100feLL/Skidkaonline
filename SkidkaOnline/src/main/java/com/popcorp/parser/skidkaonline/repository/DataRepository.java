@@ -8,6 +8,8 @@ public interface DataRepository<V extends DomainObject> {
 
     int update(V object);
 
+    int remove(V object);
+
     int save(Iterable<V> objects);
 
     Iterable<V> getAll();
