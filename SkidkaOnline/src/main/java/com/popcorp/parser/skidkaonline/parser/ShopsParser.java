@@ -4,6 +4,7 @@ import com.popcorp.parser.skidkaonline.Application;
 import com.popcorp.parser.skidkaonline.entity.Category;
 import com.popcorp.parser.skidkaonline.entity.City;
 import com.popcorp.parser.skidkaonline.entity.Shop;
+import com.popcorp.parser.skidkaonline.loader.CategoriesLoader;
 import com.popcorp.parser.skidkaonline.net.APIFactory;
 import com.popcorp.parser.skidkaonline.repository.CategoryRepository;
 import com.popcorp.parser.skidkaonline.util.ErrorManager;
@@ -41,9 +42,14 @@ public class ShopsParser {
                         Matcher categoryNameMatcher = Pattern.compile("title=\"[.[^\"]]*\"").matcher(shopResult);
                         if (categoryNameMatcher.find()) {
                             String categoryNameResult = categoryNameMatcher.group();
-                            category = categoryRepository.getWithNameAndCityId(categoryNameResult.substring(7, categoryNameResult.length() - 1), city.getId());
+                            String categoryName = categoryNameResult.substring(7, categoryNameResult.length() - 1);
+                            category = categoryRepository.getWithNameAndCityId(categoryName, city.getId());
                             if (category == null){
-                                String e = "";
+                                category = new CategoriesLoader().loadCategoriesForCity(city, categoryName);
+                                if (category == null) {
+                                    ErrorManager.sendError("SkidkaOnline: Category for shop not finded! Shop: " + shopResult);
+                                    continue;
+                                }
                             }
                         } else {
                             ErrorManager.sendError("SkidkaOnline: Category for shop not finded! Shop: " + shopResult);

@@ -17,7 +17,7 @@ public class ScheduledTasks {
         new CitiesLoader().loadCities();
     }
 
-    @Scheduled(fixedRate = 86400000, initialDelay = 3600000)//10000
+    @Scheduled(fixedRate = 86400000, initialDelay = 3600000)//3600000
     public void loadShops() {
         new ShopsLoader().loadShops();
     }
