@@ -134,9 +134,10 @@ public class SalesParser {
             Matcher imageSmallMathcer = Pattern.compile("src=\"[.[^\"]]*\"").matcher(imageResult);
             if (imageSmallMathcer.find()) {
                 String imageSmallResult = imageSmallMathcer.group();
-                String smallImage = imageSmallResult.substring(5, imageSmallResult.length() - 1);
+                String smallImage = imageSmallResult.substring(5, imageSmallResult.length() - 1).replaceAll("\\?t=t[0-9]*", "");
                 smallImages.add(smallImage);
-                bigImages.add(smallImage.replaceFirst("-[0-9]*\\.", "."));
+                String bigImage = smallImage.replaceFirst("-[0-9]*\\.", ".");
+                bigImages.add(bigImage);
             }
             Matcher heightMatcher = Pattern.compile("height=\"[0-9]*\"").matcher(imageResult);
             if (heightMatcher.find()) {

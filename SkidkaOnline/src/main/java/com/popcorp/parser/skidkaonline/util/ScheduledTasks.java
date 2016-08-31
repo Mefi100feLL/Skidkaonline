@@ -27,7 +27,7 @@ public class ScheduledTasks {
         new CategoriesLoader().loadCategories();
     }
 
-    @Scheduled(fixedRate = 21600000, initialDelay = 5400000)//3600000
+    @Scheduled(fixedRate = 21600000, initialDelay = 5400000)//5400000
     public void loadSales() {
         new SalesLoader().loadSales();
     }
