@@ -31,6 +31,30 @@ public class ScheduledTasks {
     public void loadSales() {
         new SalesLoader().loadSales();
     }
+/*
+    @Scheduled(fixedRate = 21600000, initialDelay = 1000)//5400000
+    public void test() {
+        Iterable<Shop> shops = Application.getShopsRepository().getForCity(14310);
+        for (Shop shop : shops) {
+            SalesParser.loadSales(shop)
+                    .subscribe(new Observer<ArrayList<Sale>>() {
+                        @Override
+                        public void onCompleted() {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            int a = 0;
+                        }
+
+                        @Override
+                        public void onNext(ArrayList<Sale> sales) {
+                            int a= 0;
+                        }
+                    });
+        }
+    }*/
 
     /*@Scheduled(fixedRate = 3600000, initialDelay = 7200000)
     public void sendErrors() {

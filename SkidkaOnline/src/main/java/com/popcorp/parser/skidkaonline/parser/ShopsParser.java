@@ -77,7 +77,7 @@ public class ShopsParser {
                         Matcher imageMatcher = Pattern.compile("src=\"[.[^\"]]*\"").matcher(shopResult);
                         if (imageMatcher.find()) {
                             String imageResult = imageMatcher.group();
-                            image = imageResult.substring(5, imageResult.length() - 1).replaceFirst("-[0-9]*\\.", ".");
+                            image = imageResult.substring(5, imageResult.length() - 1).replaceFirst("-[0-9]*\\.", ".").replaceAll("\\?t=t[0-9]*", "");
                         } else {
                             ErrorManager.sendError("SkidkaOnline: Count for shop not finded! Shop: " + shopResult);
                             continue;
