@@ -45,7 +45,7 @@ public class ShopsParser {
                             String categoryName = categoryNameResult.substring(7, categoryNameResult.length() - 1);
                             category = categoryRepository.getWithNameAndCityId(categoryName, city.getId());
                             if (category == null){
-                                category = new CategoriesLoader().loadCategoriesForCity(city, categoryName);
+                                category = new CategoriesLoader().loadCategoriesForCityAndName(city, categoryName);
                                 if (category == null) {
                                     ErrorManager.sendError("SkidkaOnline: Category for shop not finded! Shop: " + shopResult);
                                     continue;

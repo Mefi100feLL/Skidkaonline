@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
+import rx.Observable;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -161,5 +162,14 @@ public class ShopsRepository implements DataRepository<Shop> {
             return null;
         }
         return result;
+    }
+
+    public Observable<Shop> getObservableForCity(int cityId) {
+        return Observable.create(subscriber -> {
+            for (Shop shop : getForCity(cityId)){
+                subscriber.onNext(shop);
+            }
+            subscriber.onCompleted();
+        });
     }
 }

@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 public class APIFactory {
 
+    public static final String BASE_URL = "https://skidkaonline.ru";
+
     private static API api;
     private static Scheduler scheduler;
 
@@ -23,7 +25,7 @@ public class APIFactory {
 
             Retrofit retrofit = new Retrofit.Builder()
                     .client(okHttpClientBuilder.build())
-                    .baseUrl("https://skidkaonline.ru")
+                    .baseUrl(BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create()).build();
 

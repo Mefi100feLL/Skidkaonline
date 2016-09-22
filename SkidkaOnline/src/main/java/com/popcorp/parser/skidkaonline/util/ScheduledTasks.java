@@ -17,29 +17,29 @@ public class ScheduledTasks {
     private static final long DAY = 24 * HOUR;
 
 
-    @Scheduled(fixedRate = DAY, initialDelay = 5 * SECOND)
+    @Scheduled(fixedRate = DAY, initialDelay = HALF_HOUR)
     public void loadCities() {
         new CitiesLoader().loadCities();
     }
 
-    @Scheduled(fixedRate = DAY, initialDelay = 10 * SECOND)//86400000
+    @Scheduled(fixedRate = DAY, initialDelay = 2 * HALF_HOUR)//86400000
     public void loadCategories() {
         new CategoriesLoader().loadCategories();
     }
 
-    @Scheduled(fixedRate = DAY, initialDelay = 15 * SECOND)//3600000
+    @Scheduled(fixedRate = DAY, initialDelay = 3 * HALF_HOUR)//3600000
     public void loadShops() {
         new ShopsLoader().loadShops();
     }
 
-    @Scheduled(fixedRate = HOUR, initialDelay = 20 * SECOND)
-    public void clearOldSales() {
-        new SalesCleaner().clearOldSales();
-    }
-
-    @Scheduled(fixedRate = 4 * HOUR, initialDelay = 25 * SECOND)//5400000
+    @Scheduled(fixedRate = 4 * HOUR, initialDelay = 4 * HALF_HOUR)//5400000
     public void loadSales() {
         new SalesLoader().loadSales();
+    }
+
+    @Scheduled(fixedRate = HOUR, initialDelay = 5 * HALF_HOUR)
+    public void clearOldSales() {
+        new SalesCleaner().clearOldSales();
     }
 
 /*

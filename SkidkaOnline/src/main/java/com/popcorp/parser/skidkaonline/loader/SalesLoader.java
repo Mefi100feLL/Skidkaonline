@@ -17,47 +17,84 @@ import java.util.ArrayList;
 
 public class SalesLoader {
 
-    private SaleRepository saleRepository;
+    private SaleRepository saleRepository = Application.getSaleRepository();
+    private ShopsRepository shopsRepository = Application.getShopsRepository();
 
     public void loadSales() {
         try {
-            ShopsRepository shopsRepository = Application.getShopsRepository();
-            saleRepository = Application.getSaleRepository();
             CityRepository cityRepository = Application.getCityRepository();
-            for (City city : cityRepository.getAll()){
-                Iterable<Shop> shops = shopsRepository.getForCity(city.getId());
-                for (Shop shop : shops) {
-                    SalesParser.loadSales(shop)
-                            .subscribeOn(APIFactory.getScheduler())
-                            .subscribe(new Observer<ArrayList<Sale>>() {
-                                @Override
-                                public void onCompleted() {
+            cityRepository.getObservableAll()
+                    .subscribeOn(APIFactory.getScheduler())
+                    .subscribe(new Observer<City>() {
+                        @Override
+                        public void onCompleted() {
 
-                                }
+                        }
 
-                                @Override
-                                public void onError(Throwable e) {
-                                    if (e instanceof ShopNoFoundException){
-                                        shopsRepository.remove(((ShopNoFoundException) e).getShop());
-                                    } else if (e.getCause() instanceof ShopNoFoundException){
-                                        shopsRepository.remove(((ShopNoFoundException) e.getCause()).getShop());
-                                    } else {
-                                        ErrorManager.sendError("SkidkaOnline: Error loading sales error: " + e.getMessage());
-                                        e.printStackTrace();
-                                    }
-                                }
+                        @Override
+                        public void onError(Throwable e) {
+                            ErrorManager.sendError("SkidkaOnline: Error loading cities from DB error: " + e.getMessage());
+                            e.printStackTrace();
+                        }
 
-                                @Override
-                                public void onNext(ArrayList<Sale> sale) {
-                                    saleRepository.save(sale);
-                                }
-                            });
-
-                }
-            }
+                        @Override
+                        public void onNext(City city) {
+                            loadSalesForCity(city);
+                        }
+                    });
         } catch (Exception e) {
             ErrorManager.sendError("SkidkaOnline: Error loading sales error: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void loadSalesForCity(City city) {
+        shopsRepository.getObservableForCity(city.getId())
+                .subscribeOn(APIFactory.getScheduler())
+                .subscribe(new Observer<Shop>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        ErrorManager.sendError("SkidkaOnline: Error loading shops for city from DB error: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(Shop shop) {
+                        loadSalesForShop(shop);
+                    }
+                });
+    }
+
+    private void loadSalesForShop(Shop shop) {
+        SalesParser.loadSales(shop)
+                .subscribeOn(APIFactory.getScheduler())
+                .subscribe(new Observer<ArrayList<Sale>>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        if (e instanceof ShopNoFoundException) {
+                            shopsRepository.remove(((ShopNoFoundException) e).getShop());
+                        } else if (e.getCause() instanceof ShopNoFoundException) {
+                            shopsRepository.remove(((ShopNoFoundException) e.getCause()).getShop());
+                        } else {
+                            ErrorManager.sendError("SkidkaOnline: Error loading sales error: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onNext(ArrayList<Sale> sale) {
+                        saleRepository.save(sale);
+                    }
+                });
     }
 }

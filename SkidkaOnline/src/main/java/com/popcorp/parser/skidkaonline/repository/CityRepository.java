@@ -5,6 +5,7 @@ import com.popcorp.parser.skidkaonline.util.ErrorManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
+import rx.Observable;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -108,5 +109,14 @@ public class CityRepository implements DataRepository<City> {
                 rowSet.getString(COLUMNS_URL),
                 rowSet.getString(COLUMNS_REGION)
         );
+    }
+
+    public Observable<City> getObservableAll(){
+        return Observable.create(subscriber -> {
+            for (City city : getAll()) {
+                subscriber.onNext(city);
+            }
+            subscriber.onCompleted();
+        });
     }
 }
