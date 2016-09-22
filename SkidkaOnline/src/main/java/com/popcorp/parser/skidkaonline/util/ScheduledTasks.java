@@ -7,30 +7,41 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class ScheduledTasks {
 
-    @Scheduled(fixedRate = 3600000, initialDelay = 7200000)
-    public void clearOldSales() {
-        new SalesCleaner().clearOldSales();
-    }
+    private static final long SECOND = 1000;
 
-    @Scheduled(fixedRate = 86400000, initialDelay = 1000)
+    private static final long MINUTE = 60 * SECOND;
+
+    private static final long HALF_HOUR = 30 * MINUTE;
+    private static final long HOUR = 60 * MINUTE;
+
+    private static final long DAY = 24 * HOUR;
+
+
+    @Scheduled(fixedRate = DAY, initialDelay = 5 * SECOND)
     public void loadCities() {
         new CitiesLoader().loadCities();
     }
 
-    @Scheduled(fixedRate = 86400000, initialDelay = 3600000)//3600000
-    public void loadShops() {
-        new ShopsLoader().loadShops();
-    }
-
-    @Scheduled(fixedRate = 86400000, initialDelay = 1800000)//86400000
+    @Scheduled(fixedRate = DAY, initialDelay = 10 * SECOND)//86400000
     public void loadCategories() {
         new CategoriesLoader().loadCategories();
     }
 
-    @Scheduled(fixedRate = 21600000, initialDelay = 5400000)//5400000
+    @Scheduled(fixedRate = DAY, initialDelay = 15 * SECOND)//3600000
+    public void loadShops() {
+        new ShopsLoader().loadShops();
+    }
+
+    @Scheduled(fixedRate = HOUR, initialDelay = 20 * SECOND)
+    public void clearOldSales() {
+        new SalesCleaner().clearOldSales();
+    }
+
+    @Scheduled(fixedRate = 4 * HOUR, initialDelay = 25 * SECOND)//5400000
     public void loadSales() {
         new SalesLoader().loadSales();
     }
+
 /*
     @Scheduled(fixedRate = 21600000, initialDelay = 1000)//5400000
     public void test() {
